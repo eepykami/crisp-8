@@ -1,5 +1,9 @@
 # crisp-8
-British-themed CHIP-8 interpreter, written in C.
+British-themed CHIP-8 interpreter, written in C. Work in progress.
+
+## Usage
+
+`./crisp-8 <path-to-rom>`
 
 ## Build
 Clone this repo, then:
