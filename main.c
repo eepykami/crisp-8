@@ -109,13 +109,22 @@ void step() {
             } 
             break;
         }
-        default: printf("you fucked up\n");
+        default: printf("Unknown instruction. Bit sad, innit.\n");
                  exit(-1);
     }
 }
 
 int main(int argc, char** argv) {
+    // argc will contain the amount of arguments provided to the executable. If this is 1, we know nothing has been provided. (1 because the name of executable is first)
+    if(argc == 1) {
+        printf("No ROM provided!\n");
+        exit(-1); // Exit with an error code, -1.
+    }
+
+    // We got here, so there's some arguments. Let's see what the second one is (first will be the executable name again)
     printf("%s\n", argv[1]);
+
+    innit();
 
     return 0;
 }
