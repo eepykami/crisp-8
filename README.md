@@ -1,5 +1,5 @@
 # crisp-8
-British-themed CHIP-8 interpreter, written in C. Work in progress.
+ CHIP-8 interpreter written in C. Work in progress.
 
 ## Usage
 
