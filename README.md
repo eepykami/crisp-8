@@ -2,13 +2,18 @@
  CHIP-8 interpreter written in C. Work in progress.
 
 ## Usage
-
-`./crisp-8 <path-to-rom>`
+lol
 
 ## Build
+### Build dependencies
+```bash
+sudo apt install libsdl2-dev
+```
+
 Clone this repo, then:
 
-```mkdir build
+```bash
+mkdir build
 cd build
 cmake ..
 make
