@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include "SDL.h"
+
+#include "font.h"
+#include "ibm_rom.h"
 
 // Memory
 uint8_t ram[4096]; // 4KiB of RAM
@@ -18,29 +22,37 @@ uint8_t sp;
 // Prototypes
 void innit();
 void step();
+void sdlInit();
+
+void sdlInit() {
+    SDL_Init(SDL_INIT_VIDEO);
+
+    // Creating window, setting title bar name, location on screen, and size.
+    SDL_Window *window = SDL_CreateWindow(
+        "Crisp-8",
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        640,
+        480,
+        0
+    );
+
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    SDL_SetRenderDrawColor(renderer, 160, 32, 240, SDL_ALPHA_OPAQUE);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+
+    SDL_Delay(3000);
+
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+     
+}
 
 void innit() {
-    pc = 0x200; // Program counter, start of program code
-
-    /* Standard 4x5 font */
-    static const uint8_t font[] = {
-    /* '0' */ 0xF0, 0x90, 0x90, 0x90, 0xF0,
-    /* '1' */ 0x20, 0x60, 0x20, 0x20, 0x70,
-    /* '2' */ 0xF0, 0x10, 0xF0, 0x80, 0xF0,
-    /* '3' */ 0xF0, 0x10, 0xF0, 0x10, 0xF0,
-    /* '4' */ 0x90, 0x90, 0xF0, 0x10, 0x10,
-    /* '5' */ 0xF0, 0x80, 0xF0, 0x10, 0xF0,
-    /* '6' */ 0xF0, 0x80, 0xF0, 0x90, 0xF0,
-    /* '7' */ 0xF0, 0x10, 0x20, 0x40, 0x40,
-    /* '8' */ 0xF0, 0x90, 0xF0, 0x90, 0xF0,
-    /* '9' */ 0xF0, 0x90, 0xF0, 0x10, 0xF0,
-    /* 'A' */ 0xF0, 0x90, 0xF0, 0x90, 0x90,
-    /* 'B' */ 0xE0, 0x90, 0xE0, 0x90, 0xE0,
-    /* 'C' */ 0xF0, 0x80, 0x80, 0x80, 0xF0,
-    /* 'D' */ 0xE0, 0x90, 0x90, 0x90, 0xE0,
-    /* 'E' */ 0xF0, 0x80, 0xF0, 0x80, 0xF0,
-    /* 'F' */ 0xF0, 0x80, 0xF0, 0x80, 0x80,
-    };
+    memcpy(ram, font, sizeof(font)); // Copy font data to start of RAM
+    memcpy(ram + 0x200, ibm_rom, sizeof(ibm_rom)); // Copy program to RAM starting at 0x200
+    pc = 0x200; // Set program counter to start of program code
 }
 
 void step() {
@@ -69,7 +81,10 @@ void step() {
     */
 
     switch(instruction >> 12) { // We only care about the last 4 bits
-        case 0x0: break; // Clear screen
+        case 0x0: { // Clear screen
+            memset(display, 0, sizeof(display));
+            break;
+        }
         case 0x1: { // Jump - set PC to NNN 
             uint16_t nnn = instruction & 0xFFF; // Mask first 4 bits by AND'ing the instruction with 0xFFF, we don't care about the last bit as that's the opcode. 
             pc = nnn;
@@ -93,17 +108,22 @@ void step() {
             break;
         }
         case 0xD: {
-            uint8_t vx = V[(instruction >> 8) & 0x000F];
-            uint8_t vy = V[(instruction >> 4) & 0x000F];
-            uint8_t n = instruction & 0xF;
+            uint8_t vx = V[(instruction >> 8) & 0x000F]; // Fetch X value from instruction
+            uint8_t vy = V[(instruction >> 4) & 0x000F]; // Fetch Y value from instruction
+            uint8_t n = instruction & 0xF; // Number of bytes the sprite data takes up
 
+            // Loop to step through the number of bytes to draw
             for(int i = 0; i < n; i++) {
                 int rowI = (I + i) & 0xFFF; // Row index, wrapped. Mem. address the row starts at.
-                int row = ram[rowI]; // Contents (bits) of the row. // TODO: fix stuff innit 
+                int row = ram[rowI]; // Contents (bits) of the row. // TODO: fix stuff innit
+
                 int y = (vy + i) & 31; // If above 31, wrap back around.
+
+                // Loop to step through individual bits per byte of data
                 for(int j = 0; j < 8; j++) { // 8 pixels in a row, n rows in a sprite.
                     int x = (vx + j) & 63; // If above 63, wrap back around.
                     int index = y * 64 + x; // Index for the display array.
+
                     // j is bit on row vy, I register is where sprite starts.
                 }
             } 
@@ -115,6 +135,16 @@ void step() {
 }
 
 int main(int argc, char** argv) {
+    //sdlInit();
+    innit();
+    
+    while (1) {
+        for (int i = 0; i < 512; i++) {
+            step();
+        }
+    }
+
+    /*
     // argc will contain the amount of arguments provided to the executable. If this is 1, we know nothing has been provided. (1 because the name of executable is first)
     if(argc == 1) {
         printf("No ROM provided!\n");
@@ -123,8 +153,7 @@ int main(int argc, char** argv) {
 
     // We got here, so there's some arguments. Let's see what the second one is (first will be the executable name again)
     printf("%s\n", argv[1]);
-
-    innit();
-
+    */
+    
     return 0;
 }
