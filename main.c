@@ -22,6 +22,7 @@ uint8_t sp;
 // Prototypes
 void innit();
 void step();
+void draw();
 void sdlInit();
 
 void sdlInit() {
@@ -145,35 +146,41 @@ void step() {
     }
 }
 
-int main(int argc, char** argv) {
+void draw() { // TODO: eventually we'll want to use SDL for this
+    for (int index = 0; index < 2048; index++) {
+        if(display[index] == 1) {
+            printf("██"); 
+        } else {
+            printf("  ");
+        }
+            
+        if(index % 64 == 63) { // if index is a multiple of 64 then we can go to a new line
+            printf("\n");
+        }
+    }
+    printf("\n\n");
+}
+
+int main(int argc, char** argv) {    
+    // argc will contain the amount of arguments provided to the executable. If this is 1, we know nothing has been provided. (1 because the name of executable is first)
+    if(argc == 1) {
+        printf("No ROM provided! Using IBM ROM.\n");
+        //exit(-1); // Exit with an error code, -1.
+    }
+
     //sdlInit();
     innit();
 
     while (1) {
         for (int i = 0; i < 512; i++) {
-            step();
+            step();    
         }
         
-        for (int index = 0; index < 2048; index++) {
-            if(display[index] == 1) {
-                printf("██"); 
-            } else {
-                printf("  ");
-            }
-            
-            if(index % 64 == 63) { // if index is a multiple of 64 then we can go to a new line
-                printf("\n");
-            }
-        }
-        printf("\n\n");
-    }
-    /*
-    // argc will contain the amount of arguments provided to the executable. If this is 1, we know nothing has been provided. (1 because the name of executable is first)
-    if(argc == 1) {
-        printf("No ROM provided!\n");
-        exit(-1); // Exit with an error code, -1.
+        draw();
+
     }
 
+    /*
     // We got here, so there's some arguments. Let's see what the second one is (first will be the executable name again)
     printf("%s\n", argv[1]);
     */
