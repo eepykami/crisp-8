@@ -70,17 +70,6 @@ void step() {
 
     // We have the full instruction, and can use a switch statement to figure out what we need to do.
 
-    /*
-    TODO: Instuctions to implement:
-
-    00E0 (clear screen)
-    1NNN (jump)
-    6XNN (set register VX)
-    7XNN (add value to register VX)
-    ANNN (set index register I)
-    DXYN (display/draw)   
-    */
-
     switch(instruction >> 12) { // We only care about the last 4 bits
         case 0x0: { // Clear screen
             memset(display, 0, sizeof(display));
@@ -158,7 +147,8 @@ void draw() { // TODO: eventually we'll want to use SDL for this
             printf("\n");
         }
     }
-    printf("\n\n");
+    printf("\033[H\033[J");
+    //printf("\n\n"); // TODO: some way to clear the terminal here would be nice
 }
 
 int main(int argc, char** argv) {    
@@ -173,11 +163,11 @@ int main(int argc, char** argv) {
 
     while (1) {
         for (int i = 0; i < 512; i++) {
-            step();    
+            step();
+            
         }
-        
-        draw();
 
+        draw(); 
     }
 
     /*
