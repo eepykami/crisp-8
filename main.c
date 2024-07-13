@@ -111,6 +111,7 @@ void step() {
             uint8_t vx = V[(instruction >> 8) & 0x000F]; // Fetch X value from instruction
             uint8_t vy = V[(instruction >> 4) & 0x000F]; // Fetch Y value from instruction
             uint8_t n = instruction & 0xF; // Number of bytes the sprite data takes up
+            V[0xF] = 0; // setting collision register to 0 to start off with
 
             // Loop to step through the number of bytes to draw
             for(int i = 0; i < n; i++) {
@@ -125,6 +126,16 @@ void step() {
                     int index = y * 64 + x; // Index for the display array.
 
                     // j is bit on row vy, I register is where sprite starts.
+                    // while we havent reached the right edge of the row?
+                    
+                    if((row & 0x80) == 0x80 && display[index] == 1) {
+                        display[index] = 0;
+                        V[0xF] = 1; // setting collision register to 1
+                    } else if((row & 0x80) == 0x80 && display[index] == 0) {
+                        display[index] = 1;
+                    }
+                
+                    row = row << 1;
                 }
             } 
             break;
@@ -137,13 +148,25 @@ void step() {
 int main(int argc, char** argv) {
     //sdlInit();
     innit();
-    
+
     while (1) {
         for (int i = 0; i < 512; i++) {
             step();
         }
+        
+        for (int index = 0; index < 2048; index++) {
+            if(display[index] == 1) {
+                printf("██"); 
+            } else {
+                printf("  ");
+            }
+            
+            if(index % 64 == 63) { // if index is a multiple of 64 then we can go to a new line
+                printf("\n");
+            }
+        }
+        printf("\n\n");
     }
-
     /*
     // argc will contain the amount of arguments provided to the executable. If this is 1, we know nothing has been provided. (1 because the name of executable is first)
     if(argc == 1) {
