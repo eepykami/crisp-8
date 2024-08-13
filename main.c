@@ -5,6 +5,7 @@
 
 #include "font.h"
 #include "ibm_rom.h"
+#include <stdbool.h>
 
 // Memory
 uint8_t ram[4096]; // 4KiB of RAM
@@ -20,37 +21,34 @@ uint16_t pc;
 uint8_t sp;
 
 // Prototypes
-void innit();
+void sdlInit();
+void emulationInnit();
 void step();
 void draw();
-void sdlInit();
+
+SDL_Window *window = NULL;
+SDL_Surface *surface = NULL;
+
+#define SCREEN_W 640
+#define SCREEN_H 320
 
 void sdlInit() {
     SDL_Init(SDL_INIT_VIDEO);
 
     // Creating window, setting title bar name, location on screen, and size.
-    SDL_Window *window = SDL_CreateWindow(
+    window = SDL_CreateWindow(
         "Crisp-8",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        640,
-        480,
+        SCREEN_W,
+        SCREEN_H,
         0
     );
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
-    SDL_SetRenderDrawColor(renderer, 160, 32, 240, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
-
-    SDL_Delay(3000);
-
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-     
+    surface = SDL_GetWindowSurface(window);
 }
 
-void innit() {
+void emulationInnit() {
     memcpy(ram, font, sizeof(font)); // Copy font data to start of RAM
     memcpy(ram + 0x200, ibm_rom, sizeof(ibm_rom)); // Copy program to RAM starting at 0x200
     pc = 0x200; // Set program counter to start of program code
@@ -116,15 +114,13 @@ void step() {
                     int index = y * 64 + x; // Index for the display array.
 
                     // j is bit on row vy, I register is where sprite starts.
-                    // while we havent reached the right edge of the row?
-                    
-                    if((row & 0x80) == 0x80 && display[index] == 1) {
-                        display[index] = 0;
-                        V[0xF] = 1; // setting collision register to 1
-                    } else if((row & 0x80) == 0x80 && display[index] == 0) {
-                        display[index] = 1;
+
+                    if((row & 0x80) > 0) {
+                        if(display[index] == 1) {
+                            V[0xF] = 1; // setting collision register to 1
+                        }
+                        display[index] ^= 1;
                     }
-                
                     row = row << 1;
                 }
             } 
@@ -135,45 +131,72 @@ void step() {
     }
 }
 
-void draw() { // TODO: eventually we'll want to use SDL for this
-    for (int index = 0; index < 2048; index++) {
-        if(display[index] == 1) {
-            printf("██"); 
-        } else {
-            printf("  ");
-        }
-            
-        if(index % 64 == 63) { // if index is a multiple of 64 then we can go to a new line
-            printf("\n");
-        }
-    }
-    printf("\033[H\033[J");
-    //printf("\n\n"); // TODO: some way to clear the terminal here would be nice
+void setPixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
+{
+    Uint8 *target_pixel = (Uint8 *)surface->pixels + y * surface->pitch + x * 4;
+    *(Uint32 *)target_pixel = pixel;
 }
 
-int main(int argc, char** argv) {    
+
+void draw() {
+    uint32_t byte = 0;
+    int x1;
+    int y1;
+    int index;
+
+    for(int x = 0; x < SCREEN_W; x++) {
+        for(int y = 0; y < SCREEN_H; y++) {
+
+            x1 = ((float)x / SCREEN_W) * 64;
+            y1 = ((float)y / SCREEN_H) * 32;
+            index = y1 * 64 + x1;
+
+            if(display[index] == 1) {
+                byte = 0xffffffff;
+            } else {
+                byte = 0;
+            }
+
+            setPixel(surface, x, y, byte);
+        }
+    }
+    SDL_UpdateWindowSurface(window);
+}
+
+int main(int argc, char* args[]) {    
+    sdlInit(); 
+   
     // argc will contain the amount of arguments provided to the executable. If this is 1, we know nothing has been provided. (1 because the name of executable is first)
     if(argc == 1) {
         printf("No ROM provided! Using IBM ROM.\n");
-        //exit(-1); // Exit with an error code, -1.
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Crisp-8", "No ROM provided! Using IBM ROM.", window);
     }
+    // TODO: external ROMs
 
-    //sdlInit();
-    innit();
+    emulationInnit();
 
-    while (1) {
-        for (int i = 0; i < 512; i++) {
-            step();
-            
+    int close = 0;
+    while (!close) {
+        SDL_Event event;
+        // Events management
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+ 
+            case SDL_QUIT: // handling of close button
+                close = 1;
+                break;
+            }
         }
 
-        draw(); 
+        // Program loop
+        for (int i = 0; i < 512; i++) {
+            step();
+        }    
+        draw();
     }
 
-    /*
-    // We got here, so there's some arguments. Let's see what the second one is (first will be the executable name again)
-    printf("%s\n", argv[1]);
-    */
-    
+    // Quit
+    SDL_DestroyWindow(window);
+    SDL_Quit();
     return 0;
 }
