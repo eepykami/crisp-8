@@ -48,9 +48,12 @@ void sdlInit() {
     surface = SDL_GetWindowSurface(window);
 }
 
-void emulationInnit() {
+uint8_t *romPointer = NULL;
+
+void emulationInnit(void* romPointer, size_t romSize) {
     memcpy(ram, font, sizeof(font)); // Copy font data to start of RAM
-    memcpy(ram + 0x200, ibm_rom, sizeof(ibm_rom)); // Copy program to RAM starting at 0x200
+    //memcpy(ram + 0x200, ibm_rom, sizeof(ibm_rom)); // Copy program to RAM starting at 0x200
+    memcpy(ram + 0x200, romPointer, romSize); // Copy program to RAM starting at 0x200
     pc = 0x200; // Set program counter to start of program code
 }
 
@@ -164,16 +167,43 @@ void draw() {
 }
 
 int main(int argc, char* args[]) {    
+    int romSize;
+    FILE* rom;
     sdlInit(); 
    
     // argc will contain the amount of arguments provided to the executable. If this is 1, we know nothing has been provided. (1 because the name of executable is first)
     if(argc == 1) {
         printf("No ROM provided! Using IBM ROM.\n");
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Crisp-8", "No ROM provided! Using IBM ROM.", window);
-    }
-    // TODO: external ROMs
+        romSize = sizeof(ibm_rom);
+        romPointer = malloc(romSize);
+        memcpy(romPointer, ibm_rom, romSize);
+    } else {
+        rom = fopen(args[1], "rb");
+        printf("File name is %s.\n", args[1]);  
+        if(rom == NULL) {
+            perror("Error opening file");
+            return(1);
+        }
 
-    emulationInnit();
+        if(fseek(rom, 0, SEEK_END)) {
+            perror("fucky wucky");
+            return 1;
+        } // not all C implementations support SEEK_END
+
+        romSize = ftell(rom);
+        rewind(rom);
+        printf("Size of ROM is %d bytes.\n", romSize);
+
+        romPointer = malloc(romSize);
+        size_t result = fread(romPointer, romSize, 1, rom);
+        if(result != 1) {
+            perror("fucky wucky");
+            return 1;
+        }
+    }
+
+    emulationInnit(romPointer, romSize);
 
     int close = 0;
     while (!close) {
@@ -196,6 +226,7 @@ int main(int argc, char* args[]) {
     }
 
     // Quit
+    fclose(rom);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
