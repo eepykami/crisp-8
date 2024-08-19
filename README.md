@@ -2,7 +2,9 @@
  CHIP-8 interpreter written in C. Work in progress.
 
 ## Usage
-lol
+```bash
+crisp-8 <path-to-ROM>
+```
 
 ## Build
 ### Build dependencies
