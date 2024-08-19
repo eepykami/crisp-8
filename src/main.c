@@ -183,13 +183,13 @@ int main(int argc, char* args[]) {
         printf("File name is %s.\n", args[1]);  
         if(rom == NULL) {
             perror("Error opening file");
-            return(1);
+            return 1;
         }
 
         if(fseek(rom, 0, SEEK_END)) {
-            perror("fucky wucky");
+            perror("Error");
             return 1;
-        } // not all C implementations support SEEK_END
+        }
 
         romSize = ftell(rom);
         rewind(rom);
@@ -198,9 +198,10 @@ int main(int argc, char* args[]) {
         romPointer = malloc(romSize);
         size_t result = fread(romPointer, romSize, 1, rom);
         if(result != 1) {
-            perror("fucky wucky");
+            perror("Error");
             return 1;
         }
+        fclose(rom);
     }
 
     emulationInnit(romPointer, romSize);
@@ -226,7 +227,6 @@ int main(int argc, char* args[]) {
     }
 
     // Quit
-    fclose(rom);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
