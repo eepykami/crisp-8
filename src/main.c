@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <memory.h>
 #include "SDL.h"
 
 #include "font.h"
@@ -22,7 +23,7 @@ uint8_t sp;
 
 // Prototypes
 void sdlInit();
-void emulationInnit();
+void emulationInnit(void* romPointer, size_t romSize);
 void step();
 void draw();
 
@@ -48,7 +49,7 @@ void sdlInit() {
     surface = SDL_GetWindowSurface(window);
 }
 
-uint8_t *romPointer = NULL;
+uint8_t* romPointer;
 
 void emulationInnit(void* romPointer, size_t romSize) {
     memcpy(ram, font, sizeof(font)); // Copy font data to start of RAM
@@ -166,7 +167,7 @@ void draw() {
     SDL_UpdateWindowSurface(window);
 }
 
-int main(int argc, char* args[]) {    
+int main(int argc, char *argv[]) {
     int romSize;
     FILE* rom;
     sdlInit(); 
@@ -179,8 +180,8 @@ int main(int argc, char* args[]) {
         romPointer = malloc(romSize);
         memcpy(romPointer, ibm_rom, romSize);
     } else {
-        rom = fopen(args[1], "rb");
-        printf("File name is %s.\n", args[1]);  
+        rom = fopen(argv[1], "rb");
+        printf("File name is %s.\n", argv[1]);  
         if(rom == NULL) {
             perror("Error opening file");
             return 1;

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 project(crisp-8)
 
 # Set include directories
@@ -9,6 +9,13 @@ include_directories(${SDL2_INCLUDE_DIR})
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_TEST OFF CACHE BOOL "" FORCE)
+
+# Windows stuff
+if (WIN32) 
+    add_compile_definitions(NOMINMAX)             # Make windows.h not define min/max macros because third-party deps don't like it
+    add_compile_definitions(WIN32_LEAN_AND_MEAN)  # Make windows.h not include literally everything
+    add_compile_definitions(SDL_MAIN_HANDLED)
+endif()
 
 # Add subdirectories
 add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/SDL)
@@ -23,6 +30,12 @@ set(HEADERS
     include/ibm_rom.h
 )
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${HEADERS})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2-static)
+if(MSVC)
+    target_link_options( ${PROJECT_NAME} PUBLIC /subsystem:windows 
+                                                /ENTRY:mainCRTStartup
+    )
+endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL2-static)
