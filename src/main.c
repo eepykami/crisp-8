@@ -131,6 +131,7 @@ void step() {
             break;
         }
         default: printf("Unknown instruction. Bit sad, innit.\n");
+                 SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Crisp-8", "Unknown instruction. Bit sad, innit.", window);
                  exit(-1);
     }
 }
